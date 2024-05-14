@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,6 +27,30 @@ class ToDoViewModel @Inject constructor(private val repository: ToDoRepository) 
                     _toDoList.value = it
                 }
             }
+        }
+    }
+
+    fun addToDoTask(toDo: ToDo){
+        viewModelScope.launch(Dispatchers.IO){
+            repository.insertToDo(toDo)
+        }
+    }
+
+    fun updateToDoTask(toDo: ToDo){
+        viewModelScope.launch(Dispatchers.IO){
+            repository.updateToDo(toDo)
+        }
+    }
+
+    fun deleteToDoTask(id: UUID){
+        viewModelScope.launch(Dispatchers.IO){
+            repository.deleteToDo(id)
+        }
+    }
+
+    fun updateIsCompleted(id: UUID, isCompleted: Boolean){
+        viewModelScope.launch(Dispatchers.IO){
+            repository.updateIsCompleted(id, isCompleted)
         }
     }
 }
