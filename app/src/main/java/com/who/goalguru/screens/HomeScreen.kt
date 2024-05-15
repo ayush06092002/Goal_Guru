@@ -2,9 +2,8 @@ package com.who.goalguru.screens
 
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,34 +13,31 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxColors
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,7 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -64,6 +60,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.who.goalguru.models.ToDo
 import com.who.goalguru.utils.fontFamily
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
 @Composable
@@ -84,7 +81,9 @@ fun HomeScreen(
             ){
                 Text(modifier = Modifier
                     .padding(start = 15.dp),
-                    text = "Today, 15 May",
+                    text = LocalDate.now().toString().format(
+                        DateTimeFormatter.ofPattern("EEEE, dd MMMM yyyy")
+                    ),
                     style = TextStyle(
                         fontSize = 15.sp,
                         color = Color.White,
@@ -112,7 +111,6 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .padding(start = 15.dp, top = 15.dp)
-                    .verticalScroll(rememberScrollState())
             ) {
                 DateTimePickerComponent()
                 TodoList()
@@ -129,7 +127,7 @@ fun TodoList() {
         val viewModel = hiltViewModel<ToDoViewModel>()
         val toDoList by viewModel.toDoList.collectAsState()
         Text(
-            text = "Today",
+            text = "Your Current Tasks",
             style = TextStyle(
                 fontSize = 20.sp,
                 color = Color(color = 0xFF31446C),
@@ -139,26 +137,6 @@ fun TodoList() {
             modifier = Modifier
         )
         TaskList(tasks = toDoList, viewModel = viewModel)
-        Text(
-            text = "Tomorrow",
-            style = TextStyle(
-                fontSize = 20.sp,
-                color = Color(color = 0xFF31446C),
-                fontFamily = fontFamily,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(top = 10.dp)
-        )
-        Text(
-            text = "Upcoming",
-            style = TextStyle(
-                fontSize = 20.sp,
-                color = Color(color = 0xFF31446C),
-                fontFamily = fontFamily,
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(top = 10.dp)
-        )
     }
 }
 
@@ -166,7 +144,6 @@ fun TodoList() {
 fun TaskList(tasks: List<ToDo>, viewModel: ToDoViewModel){
     LazyColumn(
         modifier = Modifier
-            .height(200.dp)
     ) {
         items(tasks) { task ->
             TaskBox(task = task, viewModel)
@@ -176,6 +153,10 @@ fun TaskList(tasks: List<ToDo>, viewModel: ToDoViewModel){
 
 @Composable
 fun TaskBox(task: ToDo, viewModel: ToDoViewModel){
+    var checked by remember { mutableStateOf(false) }
+    LaunchedEffect(task.isCompleted) {
+        checked = task.isCompleted
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -191,19 +172,34 @@ fun TaskBox(task: ToDo, viewModel: ToDoViewModel){
             modifier = Modifier
                 .padding(10.dp)
                 .fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
                 modifier = Modifier
-                    .clickable {  }
             ) {
+                if(task.isImportant){
+                    Canvas(modifier = Modifier.size(10.dp), onDraw = {
+                        drawCircle(color = Color.Red)
+                    })
+                }
                 Text(
                     text = task.task,
                     style = TextStyle(
                         fontSize = 16.sp,
                         color = Color(color = 0xFF31446C),
                         fontFamily = fontFamily,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        textDecoration = if(task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                    )
+                )
+                Text(text = "Due Date: ${task.dueDate}",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color(color = 0xFF31446C),
+                        fontFamily = fontFamily,
+                        fontWeight = FontWeight.Normal,
+                        textDecoration = if(task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
                 )
             }
@@ -241,11 +237,21 @@ fun DateTimePickerComponent() {
         selectedDate.value.timeInMillis = datePickerState.selectedDateMillis ?: date
     }
 
-    FloatingActionButton(
-        onClick = { showDatePicker = true },
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Icon(imageVector = Icons.Default.Add, contentDescription = "Add Todo")
+    Row(modifier = Modifier,
+        verticalAlignment = Alignment.CenterVertically) {
+        FloatingActionButton(
+            onClick = { showDatePicker = true },
+            modifier = Modifier.padding(top = 10.dp, bottom = 16.dp, end = 5.dp),
+            containerColor = Color(0xFF31446C),
+        ) {
+            Icon(imageVector = Icons.Default.Add, contentDescription = "Add Todo")
+        }
+        Text(text = "Add New Task", style = TextStyle(
+            fontSize = 20.sp,
+            color = Color(color = 0xFF31446C),
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.Bold
+        ))
     }
 
     if (showDatePicker) {
@@ -256,14 +262,8 @@ fun DateTimePickerComponent() {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (selectedDate.value.after(Calendar.getInstance())) {
-                            Log.d("DateTimePickerComponent", "Selected Date: ${selectedDate.value.time.toInstant().atZone(selectedDate.value.timeZone.toZoneId()).toLocalDate()}")
-                            isDialogOpen = true
-                            showDatePicker = false
-                        } else {
-                            Log.d("DateTimePickerComponent", "Selected Date: ${selectedDate.value.time.toInstant().atZone(selectedDate.value.timeZone.toZoneId()).toLocalDate()}")
-                            Toast.makeText(context, "Please select a future date", Toast.LENGTH_SHORT).show()
-                        }
+                        isDialogOpen = true
+                        showDatePicker = false
                     }
                 ) {
                     Text("OK")
@@ -333,11 +333,14 @@ fun AddTodoDialog(
 ) {
     if (isOpen) {
         Dialog(onDismissRequest = onDismiss) {
-            Surface(
+            Card(
                 modifier = Modifier
                     .padding(16.dp)
-                    .fillMaxWidth()
-                    .background(color = Color.White),
+                    .fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(5.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -355,9 +358,20 @@ fun AddTodoDialog(
                     OutlinedTextField(
                         value = newTaskText,
                         onValueChange = { onTaskTextChanged(it) },
-                        label = { Text("Task") },
+                        label = { Text("Task",
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                color = Color(color = 0xFF31446C),
+                                fontFamily = fontFamily
+
+                            )
+                        ) },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color(0xFF31446C),
+                        )
+
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -366,10 +380,18 @@ fun AddTodoDialog(
                     ) {
                         Checkbox(
                             checked = isImportant,
-                            onCheckedChange = { onImportantCheckedChange(it) }
+                            onCheckedChange = { onImportantCheckedChange(it) },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFFF4863C)
+                            )
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "Important")
+                        Text(text = "Important",
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                color = Color(color = 0xFFF5A921),
+                                fontFamily = fontFamily
+                            )
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -384,3 +406,4 @@ fun AddTodoDialog(
         }
     }
 }
+
